@@ -1,0 +1,234 @@
+# Task: Build V1 of an AI-Powered Autonomous Testing Agent — Requirement to Test Cases
+
+Act as a senior AI engineer and Python backend developer. Implement the first milestone of an AI-powered autonomous software testing agent in the current repository.
+
+## 1. Objective
+
+Build a working feature that accepts a business requirement in plain English, sends it to an OpenAI model, and returns structured JSON test cases.
+
+The flow must be:
+
+Business Requirement → OpenAI API → Test Case Generation → JSON Validation → Display Results
+
+**Important:** This is only Milestone 1. Do not implement Playwright browser automation, autonomous browser exploration, visual testing, RAG, multiple agents, or a complex frontend yet.
+
+## 2. First inspect the existing project
+
+Before making changes:
+
+- Inspect the current repository structure, existing code, dependencies, and configuration.
+- Identify the existing programming language and framework.
+- Reuse the existing architecture wherever possible.
+- If the repository is empty, use Python and FastAPI for the backend.
+- Do not overwrite existing working functionality.
+- Implement the feature directly instead of merely providing instructions.
+
+## 3. OpenAI integration
+
+Integrate the OpenAI API using the official OpenAI SDK.
+
+Requirements:
+
+- Read the API key from an environment variable named `OPENAI_API_KEY`.
+- Read the model name from an environment variable named `OPENAI_MODEL`.
+- Use `gpt-5.6-luna` as the configurable default model identifier, but verify that the configured model is available to the API account. If it is unavailable, report a clear configuration error rather than silently switching models.
+- Never hardcode API keys or expose them in API responses, frontend code, logs, or source control.
+- Use structured output or JSON Schema-constrained output where supported by the selected model.
+- Keep the model integration isolated in a dedicated service module so it can be changed later.
+
+## 4. Input
+
+The application must accept a business requirement such as:
+
+Allow the user to enter any business requirement as plain text.
+
+Validate the input:
+- It must not be empty.
+- Reject whitespace-only input.
+- Set a reasonable maximum length, such as 10,000 characters.
+- Return useful validation errors.
+
+## 5. Test case generation
+
+Ask the model to analyze the requirement and generate comprehensive, relevant test scenarios.
+
+Consider the following categories when applicable:
+
+- Positive / happy-path testing
+- Negative testing
+- Required-field validation
+- Boundary-value testing
+- Business-rule validation
+- Authentication and authorization
+- State transitions
+- Error handling
+- Edge cases
+
+Do not generate irrelevant tests just to increase the count. Do not assume unspecified business rules are confirmed facts. Mark assumptions explicitly.
+
+Generate approximately 5–15 test cases for an ordinary requirement, adjusting the number based on complexity.
+
+## 6. Required JSON schema
+
+Every generated test case must follow this structure:
+
+{
+  "test_suite_name": "User Registration and Authentication",
+  "requirement_summary": "Summary of the supplied business requirement",
+  "assumptions": [],
+  "test_cases": [
+    {
+      "test_case_id": "TC-001",
+      "title": "Register with valid details",
+      "category": "positive",
+      "priority": "high",
+      "preconditions": [
+        "The registration page is accessible",
+        "The email address is not already registered"
+      ],
+      "test_data": {
+        "name": "Test User",
+        "email": "test@example.com",
+        "password": "ExamplePassword123!"
+      },
+      "steps": [
+        {
+          "step_number": 1,
+          "action": "Open the registration page",
+          "expected_result": "The registration form is displayed"
+        }
+      ],
+      "overall_expected_result": "The account is created successfully",
+      "automation_feasibility": "automatable"
+    }
+  ]
+}
+
+Treat this as an illustrative example, not a fixed response. Generate test data and scenarios appropriate to the actual requirement.
+
+Allowed values:
+- `category`: positive, negative, validation, boundary, security, state_transition, error_handling, edge_case
+- `priority`: critical, high, medium, low
+- `automation_feasibility`: automatable, partially_automatable, requires_manual_review
+
+Ensure:
+- Every test case has a unique ID.
+- Every test has actionable steps and explicit expected results.
+- Test cases are traceable to the requirement.
+- The output contains valid JSON only at the model-output layer.
+- No Markdown fences or explanatory prose are included in the JSON response.
+- Do not claim that a test has passed or failed; tests have not been executed yet.
+
+Extend the schema with a `requirement_coverage` section containing requirement statements and the test case IDs that cover each statement. Identify important requirement statements that lack test coverage.
+
+## 7. Backend API
+
+If using FastAPI, implement:
+
+`POST /api/test-cases/generate`
+
+Request:
+
+{
+  "requirement": "Users should be able to register and verify their email."
+}
+
+Successful response:
+
+{
+  "success": true,
+  "data": {
+    "test_suite_name": "...",
+    "requirement_summary": "...",
+    "assumptions": [],
+    "requirement_coverage": [],
+    "test_cases": []
+  }
+}
+
+Also implement:
+- `GET /health` to check whether the service is running.
+- Clear HTTP status codes.
+- Input validation.
+- Safe error handling.
+- Appropriate timeouts and reasonable limits.
+- JSON schema validation of model output before returning it.
+
+Never return fabricated test cases as though they came from the model when an API call fails.
+
+## 8. Project configuration
+
+If the project is empty, use a structure similar to:
+
+ai-testing-agent/
+├── app/
+│   ├── main.py
+│   ├── models.py
+│   ├── services/
+│   │   └── test_generator.py
+│   └── prompts/
+│       └── test_generation.txt
+├── tests/
+│   ├── test_api.py
+│   └── test_validation.py
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+
+Adapt this structure if the repository already has an established layout.
+
+Include:
+- Dependency declarations.
+- `.env.example` containing placeholders only.
+- `.gitignore` entries for `.env`, virtual environments, caches, and generated secrets.
+- Instructions to create a virtual environment, install dependencies, configure environment variables, and run the server.
+- Example API requests and responses.
+
+## 9. Testing
+
+Write automated tests covering:
+
+1. Valid business requirement input.
+2. Empty and whitespace-only requirements.
+3. Requirements exceeding the length limit.
+4. Correct response schema.
+5. Invalid or malformed model output.
+6. OpenAI API errors and timeouts.
+7. Missing API key or invalid configuration.
+
+Mock OpenAI responses in unit tests. Unit tests must not require a real API key or make paid API calls.
+
+## 10. Implementation rules
+
+- Follow clean code principles and use type hints.
+- Separate API routes, data models, prompt construction, and OpenAI integration.
+- Keep the system extensible for a future Playwright execution engine.
+- Do not execute generated test steps against a real application.
+- Do not generate or execute arbitrary Python, shell commands, or browser scripts from model output.
+- Do not store passwords, API keys, or sensitive user data unnecessarily.
+- Do not add a database, vector store, Redis, or frontend unless the existing project requires it.
+
+## 11. Definition of done
+
+The milestone is complete only when:
+
+1. I can submit a business requirement.
+2. The configured OpenAI model generates test cases.
+3. The response is valid, schema-validated JSON.
+4. Each test case includes steps and expected results.
+5. Requirement coverage is included.
+6. Errors are handled gracefully.
+7. Automated unit tests pass.
+8. Setup and usage instructions are documented.
+
+After implementation, run the available tests and report:
+- Files created or modified.
+- Architecture implemented.
+- Commands to install and run the application.
+- How to configure the API key and model.
+- Example request and response.
+- Test results.
+- Any remaining limitations.
+
+Start by inspecting the repository, then implement and verify the complete milestone. Do not stop after producing a plan.
