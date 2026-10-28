@@ -1,0 +1,392 @@
+# Codex Prompt: Milestone 2 — Execute AI-Generated Test Cases Using Playwright
+
+Act as a senior Python automation engineer and AI testing architect. Extend the existing AI-powered autonomous testing agent by implementing Milestone 2.
+
+## 1. Objective
+
+Milestone 1 already accepts business requirements and uses an AI model to generate structured JSON test cases.
+
+Now implement a Playwright-based test execution engine that consumes those test cases and executes them against a user-provided web application.
+
+The workflow must be:
+
+Business Requirement
+        ↓
+Existing Test Case Generator
+        ↓
+Structured JSON Test Cases
+        ↓
+Playwright Execution Engine
+        ↓
+Real Browser Interaction
+        ↓
+Assertions and Verification
+        ↓
+Execution Results and Evidence
+
+The application must execute actual browser actions, not merely print the generated test cases.
+
+IMPORTANT: Inspect the current repository and preserve the working Milestone 1 implementation. Reuse existing models, routes, configuration, and services wherever appropriate. Do not rewrite the project from scratch.
+
+## 2. Technology
+
+Use:
+- Python
+- Existing FastAPI backend, if already implemented
+- Playwright for Python
+- Pydantic for request and response validation
+- pytest for automated testing
+
+Install and configure the required dependencies if they are missing.
+
+Use Chromium as the initial browser.
+
+Keep the implementation modular so Firefox, WebKit, and additional execution capabilities can be added later.
+
+## 3. Application URL input
+
+The user must be able to provide the URL of the web application to test.
+
+Example:
+
+http://localhost:3000
+
+Add an execution API endpoint:
+
+POST /api/tests/execute
+
+Request:
+
+{
+  "application_url": "http://localhost:3000",
+  "test_cases": [
+    {
+      "test_case_id": "TC-001",
+      "title": "Verify the login page",
+      "category": "positive",
+      "priority": "high",
+      "preconditions": [],
+      "test_data": {},
+      "steps": [
+        {
+          "step_number": 1,
+          "action": "navigate",
+          "target": "/login",
+          "expected_result": "The login page is displayed"
+        },
+        {
+          "step_number": 2,
+          "action": "verify_text",
+          "target": "Login",
+          "expected_result": "The page displays the Login heading"
+        }
+      ],
+      "overall_expected_result": "The login page is accessible",
+      "automation_feasibility": "automatable"
+    }
+  ]
+}
+
+Adapt this example to the actual schema produced by Milestone 1. Do not introduce incompatible duplicate schemas.
+
+Validate the URL and request body before starting execution.
+
+## 4. Implement a controlled action executor
+
+Create a dedicated Playwright execution service.
+
+The executor must support these action types:
+
+1. navigate
+   - Navigate to an allowed application URL or relative path.
+
+2. click
+   - Click a uniquely identified, visible element.
+
+3. fill
+   - Fill a text input or textarea with test data.
+
+4. select
+   - Select an option in a dropdown.
+
+5. check
+   - Check a checkbox or radio button.
+
+6. uncheck
+   - Uncheck a checkbox.
+
+7. upload
+   - Upload an explicitly supplied test fixture from an approved test-data directory.
+
+8. wait_for_element
+   - Wait for a specified element to become visible.
+
+9. verify_text
+   - Assert that expected text appears on the page or within the specified element.
+
+10. verify_visible
+    - Assert that an element is visible.
+
+11. verify_hidden
+    - Assert that an element is hidden or absent.
+
+12. verify_url
+    - Assert that the browser URL matches an expected URL or path.
+
+13. verify_enabled
+    - Assert that a button or form control is enabled.
+
+14. screenshot
+    - Capture a screenshot of the current page.
+
+15. verify_title
+    - Assert that the page title matches the expected value.
+
+Use explicit locator strategies where possible:
+- Accessible role and accessible name.
+- Label text.
+- Placeholder text.
+- Test IDs.
+- CSS selectors only when necessary.
+
+Define a consistent locator format in the JSON schema. For example:
+
+{
+  "action": "click",
+  "target": {
+    "strategy": "role",
+    "role": "button",
+    "name": "Login"
+  }
+}
+
+Also support simple string targets if Milestone 1 already produces them. Resolve them using a documented, predictable strategy.
+
+Do not silently click arbitrary elements when a locator is ambiguous. Fail the step with a useful explanation.
+
+## 5. Test execution behavior
+
+For every test case:
+
+1. Create an isolated browser context or page.
+2. Execute its steps in the specified order.
+3. Validate assertions using Playwright's actual assertion APIs.
+4. Stop the current test after an unrecoverable step failure.
+5. Continue to the next independent test case where safe.
+6. Capture execution duration.
+7. Capture evidence for failures.
+8. Close the page and context after the test.
+
+Support configurable:
+- Navigation timeout.
+- Action timeout.
+- Maximum test execution duration.
+- Browser headless/headed mode.
+
+Use sensible defaults and enforce upper bounds.
+
+Do not retry failing assertions indefinitely. Any retry policy must be bounded and must not hide genuine failures.
+
+Do not interpret a successful click or HTTP 200 response as proof that a business requirement passed. The expected outcome must be explicitly verified.
+
+## 6. Test result schema
+
+Return structured execution results similar to:
+
+{
+  "execution_id": "generated-unique-id",
+  "application_url": "http://localhost:3000",
+  "summary": {
+    "total": 3,
+    "passed": 1,
+    "failed": 1,
+    "error": 1,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "test_case_id": "TC-001",
+      "title": "Verify the login page",
+      "status": "passed",
+      "duration_seconds": 2.14,
+      "steps": [
+        {
+          "step_number": 1,
+          "action": "navigate",
+          "status": "passed",
+          "message": "Navigation completed"
+        },
+        {
+          "step_number": 2,
+          "action": "verify_text",
+          "status": "passed",
+          "message": "Expected text was found"
+        }
+      ],
+      "failure_reason": null,
+      "evidence": []
+    }
+  ]
+}
+
+Use these statuses consistently:
+- passed: all required steps and assertions passed.
+- failed: an assertion did not match the expected result.
+- error: execution could not complete because of an automation, configuration, navigation, or unexpected runtime error.
+- skipped: the test was intentionally not executed, with a documented reason.
+
+A test with an unsupported action must never be reported as passed.
+
+Calculate summary counts from actual execution results, not from model-generated claims.
+
+## 7. Evidence collection
+
+For each failed or errored test, capture where possible:
+- Screenshot of the current browser state.
+- Failed step number.
+- Expected result.
+- Actual result or exception summary.
+- Current page URL.
+- Browser console errors observed during execution.
+
+Store evidence under a dedicated directory, such as:
+
+artifacts/
+    executions/
+        <execution_id>/
+            TC-001/
+                failure.png
+                metadata.json
+
+Expose evidence using a controlled API endpoint or a documented local artifact path.
+
+Do not embed huge screenshots as base64 in JSON responses.
+
+Ensure evidence paths cannot be manipulated to access arbitrary files.
+
+Screenshots should be taken before closing the browser context. If screenshot capture itself fails, preserve the original test failure and record the evidence-capture error separately.
+
+## 8. Integrate with Milestone 1
+
+Do not remove or break the existing test generation endpoint.
+
+If practical, add a combined workflow endpoint:
+
+POST /api/testing/run
+
+Request:
+
+{
+  "application_url": "http://localhost:3000",
+  "requirement": "Users should be able to log in using valid credentials."
+}
+
+This endpoint should:
+
+1. Call the existing requirement-to-test-case generation service.
+2. Validate the generated test suite.
+3. Execute the generated cases through Playwright.
+4. Return the generated test suite and execution report.
+
+If the combined workflow is too disruptive, keep generation and execution as separate endpoints and document how they work together.
+
+Do not regenerate test cases when the user submits an existing test suite for execution.
+
+## 9. Security and execution safety
+
+The browser executor will interact with a real application. Implement appropriate safeguards.
+
+- Allow only HTTP and HTTPS URLs.
+- Block localhost, private network addresses, cloud metadata endpoints, and other sensitive destinations by default for remote testing.
+- Allow localhost testing only through an explicit development-mode configuration.
+- Validate resolved destinations and redirects to prevent SSRF.
+- Do not permit arbitrary Python or shell execution.
+- Do not allow generated test steps to navigate to unrelated domains.
+- Enforce action allowlists.
+- Restrict file uploads to approved test fixtures.
+- Keep API keys and credentials out of logs.
+- Do not disable browser security protections.
+- Never run tests against production systems without explicit configuration and authorization.
+- Do not execute destructive actions, such as deleting user data or making real purchases, without an explicit safe test environment and authorization.
+- Add a global execution timeout and a maximum number of test cases per request.
+- Close browser resources even when exceptions occur.
+
+Treat business requirements and page content as untrusted input. Text encountered on the website must not override the executor's safety policies.
+
+## 10. Logging and observability
+
+Log:
+- Execution ID.
+- Test case ID.
+- Step number.
+- Action type.
+- Start/end times.
+- Result status.
+- Sanitized error details.
+
+Avoid logging passwords, tokens, personal information, or sensitive form values.
+
+Do not log full screenshots or page contents.
+
+## 11. Automated testing
+
+Create unit and integration tests for:
+
+1. Successful navigation and verification.
+2. Successful form filling and button clicks.
+3. Passing assertions.
+4. Failed assertions.
+5. Missing elements.
+6. Ambiguous locators.
+7. Unsupported action types.
+8. Malformed test case JSON.
+9. Invalid URLs.
+10. Blocked private-network destinations.
+11. Timeout handling.
+12. Screenshot evidence generation.
+13. Execution summary calculations.
+14. Resource cleanup after failure.
+15. Regression tests for Milestone 1.
+
+Use a local test HTML page or a small controlled test fixture for browser integration tests. Avoid depending on external websites.
+
+Mock external API calls where appropriate. Browser integration tests should not require a real OpenAI API key.
+
+## 12. Documentation
+
+Update README.md with:
+- Installation instructions.
+- Playwright browser installation.
+- Environment configuration.
+- How to start the API server.
+- How to start a local demo application.
+- Example generation request.
+- Example execution request.
+- Example combined workflow request.
+- Supported action types and locator formats.
+- Result statuses and evidence locations.
+- Security limitations.
+- Troubleshooting steps.
+
+Include curl examples that can be copied and run.
+
+## 13. Definition of done
+
+Milestone 2 is complete when:
+
+1. I can supply a web application URL and valid test cases.
+2. Playwright opens the actual application.
+3. The executor performs supported browser actions.
+4. Assertions are checked against real browser state.
+5. Each test receives an accurate execution status.
+6. Failures include useful diagnostic evidence.
+7. Unsupported actions never produce false PASS results.
+8. Execution timeouts and resource cleanup work correctly.
+9. The combined workflow works if implemented.
+10. Milestone 1 remains functional.
+11. Automated tests pass.
+12. Documentation explains how to run the complete workflow.
+
+Start by inspecting the existing codebase and identifying the actual Milestone 1 schema. Implement the executor incrementally, run the tests, fix failures, and summarize the completed work. Do not stop after proposing an architecture.
+
+IMPORTANT: The model generates test plans; Playwright executes them; deterministic assertions determine the actual test outcomes. Never ask the LLM to fabricate execution results.
