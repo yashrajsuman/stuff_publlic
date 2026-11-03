@@ -1,0 +1,574 @@
+# Milestone 3: AI-Powered Requirement Understanding and Unified Requirement Specification (URS)
+
+## Project Context
+
+I am building an Autonomous Software Testing Agent called Autonomous QA Studio.
+
+The existing application has:
+- A Angular frontend.
+- A Python FastAPI backend.
+- OpenAI integration.
+- Plain-text test case generation.
+- Multi-file upload and document extraction capabilities from the previous milestone.
+
+The previous milestone introduced extraction of:
+- PDF text and embedded images.
+- DOCX paragraphs, headings, tables and embedded images.
+- XLSX sheets, rows and embedded images.
+- CSV data.
+- TXT content.
+- PPTX slides, text and embedded images.
+- Standalone images and UI mockups.
+
+Now I want to build an AI-powered requirement understanding engine that analyzes all this extracted information and converts it into a structured Unified Requirement Specification (URS).
+
+## 1. Inspect the Existing Implementation
+
+Before writing code:
+
+1. Inspect the complete repository.
+2. Understand the existing document ingestion and extraction services.
+3. Inspect how extracted text and images are stored.
+4. Inspect the existing OpenAI integration.
+5. Understand existing database models and API conventions.
+6. Inspect the frontend upload and generated-content pages.
+7. Identify incomplete features from the previous milestone.
+
+Important:
+- Reuse the existing extraction services.
+- Do not implement document extraction again.
+- Do not replace existing APIs.
+- Do not break plain-text test generation.
+- Do not introduce a duplicate database or unnecessary infrastructure.
+- Extend the existing architecture.
+
+## 2. Build the AI Requirement Understanding Engine
+
+Create a modular service responsible for understanding extracted requirement content.
+
+It must accept:
+- Extracted paragraphs and headings.
+- Tables and spreadsheet data.
+- User stories.
+- Acceptance criteria.
+- Business rules.
+- Actual extracted images.
+- UI screenshots and mockups.
+- Diagrams and flowcharts.
+- Source metadata.
+
+The engine must understand the relationship between textual and visual information.
+
+Use the existing OpenAI SDK and configured model.
+
+Use a vision-capable model for image analysis. Do not assume that the currently configured text model supports image inputs.
+
+Keep model configuration environment-driven.
+
+Do not hardcode API keys or model-specific assumptions throughout the codebase.
+
+## 3. Requirement Extraction
+
+Extract atomic, meaningful requirements from the available content.
+
+Each requirement should contain:
+
+- Unique requirement ID.
+- Requirement title.
+- Detailed description.
+- Requirement category.
+- Requirement type.
+- Priority.
+- Actor or user role, if identifiable.
+- Preconditions, if identifiable.
+- Business rules.
+- Acceptance criteria.
+- Related UI components.
+- Related screens.
+- Source references.
+- Confidence level.
+- Assumptions.
+- Unresolved questions.
+
+Supported requirement categories:
+
+- Functional.
+- Non-functional.
+- Validation.
+- Security.
+- Performance.
+- Usability.
+- UI/UX.
+- Business rules.
+- Integration.
+- Accessibility.
+
+Do not invent information that is not present in the source material.
+
+If a field cannot be determined, return null or an appropriate unknown status.
+
+## 4. User Story Understanding
+
+The engine must recognize user story formats such as:
+
+"As a [user role], I want [functionality], so that [business benefit]."
+
+Extract:
+
+- Actor.
+- User goal.
+- Business benefit.
+- Acceptance criteria.
+- Functional requirements.
+- Validation rules.
+- Relevant edge cases explicitly supported by the story.
+
+Support user stories with and without acceptance criteria.
+
+If acceptance criteria are missing:
+- Extract what can be established.
+- Identify missing information.
+- Create clarification questions.
+- Do not silently invent business behavior.
+
+## 5. UI Mockup and Screenshot Understanding
+
+This is a critical feature.
+
+The system must analyze actual images extracted in the previous milestone.
+
+Use a vision-capable LLM to identify:
+
+- Input fields.
+- Buttons.
+- Links.
+- Dropdowns.
+- Checkboxes.
+- Radio buttons.
+- Navigation elements.
+- Labels and placeholders.
+- Required indicators.
+- Error messages visible in the design.
+- Component relationships.
+- Screen structure.
+- Visual hierarchy.
+- Relevant layout information.
+
+For each identified UI component, capture:
+
+- Component ID.
+- Component type.
+- Visible label.
+- Placeholder, if present.
+- Visible state.
+- Associated screen.
+- Source image ID.
+- Relevant source location.
+
+Example:
+
+{
+  "screen_id": "SCREEN_001",
+  "screen_name": "User Registration",
+  "source_image_id": "IMG_001",
+  "components": [
+    {
+      "component_id": "UI_001",
+      "type": "input",
+      "label": "Email",
+      "input_type": "email"
+    },
+    {
+      "component_id": "UI_002",
+      "type": "input",
+      "label": "Password",
+      "input_type": "password"
+    },
+    {
+      "component_id": "UI_003",
+      "type": "button",
+      "label": "Register"
+    }
+  ]
+}
+
+Important rules:
+
+- Do not infer backend behavior from visual appearance alone.
+- Do not assume validation rules that are not specified.
+- Do not assume that a visible button performs a particular action unless supported by context.
+- Mark inferred observations separately from confirmed requirements.
+- Preserve the original image reference.
+- Allow one screen to have multiple related images.
+
+## 6. Multimodal Context Processing
+
+The system must combine related text and images.
+
+Example:
+
+A DOCX document contains:
+
+Heading: User Registration
+
+Text:
+"Users should register using their email address and password."
+
+Embedded screenshot:
+Registration form containing email, password and register button.
+
+The system should analyze the text and screenshot together.
+
+However, preserve the distinction between:
+
+1. Explicit requirements from text.
+2. Visual observations from images.
+3. Inferences from combined context.
+4. Unresolved questions.
+
+Do not send only image descriptions to the vision model. Where visual understanding is required, provide the actual image.
+
+For documents with multiple screenshots, maintain image IDs and source locations.
+
+## 7. Large Document Processing
+
+Some documents may contain hundreds of pages.
+
+Implement a scalable processing approach:
+
+- Use existing extracted content.
+- Organize content by document, page, section, sheet or slide.
+- Use token-aware and section-aware chunking.
+- Preserve source metadata across chunks.
+- Process related sections together where possible.
+- Process images alongside their relevant textual context.
+- Avoid sending an entire large document in one request.
+- Avoid losing relationships between sections and images.
+
+Implement controlled concurrency and handle model rate limits.
+
+Support retries for temporary API failures.
+
+Do not repeatedly process already completed content unnecessarily.
+
+If processing fails for one chunk, preserve successful results and report the failure.
+
+## 8. Requirement Consolidation Engine
+
+After extracting requirements from individual sources, consolidate them into one project-level specification.
+
+Implement:
+
+### A. Duplicate Detection
+
+Identify requirements that express the same business behavior.
+
+Do not delete source references when combining duplicates.
+
+### B. Conflict Detection
+
+Identify contradictory requirements.
+
+Example:
+
+Document A:
+"Password must contain at least 8 characters."
+
+Document B:
+"Password must contain at least 12 characters."
+
+The system must:
+- Identify the conflict.
+- Preserve both original statements.
+- Show their source documents and locations.
+- Mark the requirement as requiring human resolution.
+
+Never silently select one version.
+
+### C. Missing Information Detection
+
+Identify:
+- Missing acceptance criteria.
+- Undefined validation rules.
+- Unclear workflows.
+- Missing error handling behavior.
+- Incomplete user journeys.
+- Unclear UI-to-business-rule relationships.
+
+### D. Requirement Relationships
+
+Identify related requirements and potential dependencies.
+
+Preserve original requirement IDs and source traceability.
+
+## 9. Unified Requirement Specification (URS)
+
+Create a consistent Pydantic schema for the complete specification.
+
+Example:
+
+{
+  "project_id": "PROJECT_001",
+  "specification_id": "URS_001",
+  "status": "pending_review",
+  "requirements": [
+    {
+      "requirement_id": "REQ_001",
+      "title": "User Registration",
+      "description": "Users must register using their email address.",
+      "category": "functional",
+      "priority": "high",
+      "confidence": 0.95,
+      "evidence_type": "explicit",
+      "acceptance_criteria": [
+        "Users must enter a valid email address."
+      ],
+      "related_ui_components": [
+        "UI_001"
+      ],
+      "source_references": [
+        {
+          "file_id": "FILE_001",
+          "filename": "Registration_SRS.docx",
+          "section": "User Registration"
+        }
+      ],
+      "assumptions": [],
+      "unresolved_questions": []
+    }
+  ],
+  "conflicts": [],
+  "duplicates": [],
+  "clarification_questions": []
+}
+
+This is an illustrative schema. Adapt it to the actual application.
+
+Requirements must have stable IDs and source traceability.
+
+## 10. Persistence
+
+Persist the generated specification using the existing database architecture.
+
+Store:
+- Project ID.
+- Specification ID and version.
+- Extracted requirements.
+- Source references.
+- UI component specifications.
+- Conflicts.
+- Duplicate relationships.
+- Clarification questions.
+- Approval status.
+- Creation and update timestamps.
+
+Support retrieving previously generated specifications.
+
+Avoid storing large image binary data inside ordinary requirement records. Use existing file storage and image references.
+
+## 11. Backend APIs
+
+Create APIs following the existing FastAPI conventions.
+
+Suggested endpoints:
+
+POST /api/requirements/analyze
+
+Input:
+- Project ID.
+- Uploaded file IDs or references to previously extracted documents.
+- Optional additional plain-text requirements.
+
+Behavior:
+- Retrieve previously extracted content.
+- Analyze relevant text and images.
+- Generate structured requirements.
+- Consolidate requirements.
+- Save the resulting URS.
+- Return its specification ID and processing status.
+
+GET /api/requirements/specifications/{specification_id}
+
+Retrieve a complete URS.
+
+GET /api/requirements/specifications/{specification_id}/review
+
+Retrieve requirements, conflicts, duplicates and clarification questions for review.
+
+PATCH /api/requirements/specifications/{specification_id}/requirements/{requirement_id}
+
+Allow editing a requirement during human review.
+
+POST /api/requirements/specifications/{specification_id}/approve
+
+Approve the specification only when required conflicts have been resolved.
+
+Adapt endpoint names and schemas to the existing project structure.
+
+## 12. Frontend Integration
+
+Extend the existing Autonomous QA Studio frontend.
+
+Add a Requirement Analysis and Review interface.
+
+Display:
+
+### A. Analysis Summary
+- Total extracted requirements.
+- Functional requirements.
+- Validation requirements.
+- Security requirements.
+- UI/UX requirements.
+- Number of conflicts.
+- Number of duplicate candidates.
+- Number of clarification questions.
+
+### B. Requirement Explorer
+
+Show requirements in a searchable and filterable table.
+
+Columns:
+- Requirement ID.
+- Title.
+- Category.
+- Priority.
+- Confidence.
+- Evidence type.
+- Review status.
+- Source.
+
+### C. Requirement Details
+
+When a user opens a requirement, show:
+- Description.
+- Acceptance criteria.
+- Business rules.
+- Related UI components.
+- Source document.
+- Page, section or sheet.
+- Related image references.
+- Assumptions.
+- Unresolved questions.
+
+### D. Conflict Review
+
+Display conflicting requirements side by side.
+
+Show:
+- Original statements.
+- Source documents.
+- Source locations.
+- Reason for conflict.
+
+Allow the user to resolve the conflict by editing or selecting the authoritative requirement.
+
+Do not automatically resolve conflicts.
+
+### E. Clarification Questions
+
+Display questions generated by the AI.
+
+Allow the user to provide answers and save them as additional confirmed requirements or acceptance criteria.
+
+### F. Approval
+
+Provide:
+- Approve specification.
+- Save changes.
+- Return for clarification.
+
+A specification must not be approved while unresolved blocking conflicts remain.
+
+Use the existing UI design and reusable components.
+
+## 13. AI Reliability and Validation
+
+The LLM output must be validated against Pydantic schemas.
+
+Implement:
+- Structured output where supported by the configured model.
+- JSON parsing and validation.
+- Controlled retries for malformed output.
+- Safe error handling.
+- Logging without exposing API keys or sensitive document contents.
+- Confidence values with a consistent interpretation.
+
+Do not allow the model to fabricate source references.
+
+Every extracted requirement must reference actual source content or be explicitly identified as an inference.
+
+Confidence scores must not be treated as proof of correctness.
+
+## 14. Testing
+
+Write tests covering:
+
+- User story extraction.
+- Plain-text requirement extraction.
+- PDF requirement extraction.
+- DOCX requirement extraction.
+- XLSX validation rule extraction.
+- Embedded screenshot understanding.
+- Text and image context association.
+- Multiple documents in one project.
+- Duplicate detection.
+- Conflicting requirements.
+- Missing acceptance criteria.
+- Invalid LLM output.
+- Missing source references.
+- Large document chunking.
+- Partial AI processing failures.
+- Specification persistence.
+- Requirement editing.
+- Approval restrictions.
+
+Mock external LLM calls where appropriate.
+
+Include integration tests for the APIs.
+
+Do not require a real OpenAI API key for ordinary unit tests.
+
+## 15. Scope Restrictions
+
+Do not implement the following yet:
+
+- Test case generation from the URS.
+- Playwright execution.
+- Autonomous browser interaction.
+- RAG or vector databases.
+- Self-healing tests.
+- CI/CD integration.
+
+These belong to later milestones.
+
+The existing plain-text test generation endpoint must continue working.
+
+## 16. Completion Criteria
+
+The milestone is complete only when:
+
+1. The backend can analyze previously extracted document content.
+2. Actual images can be analyzed using a vision-capable model.
+3. User stories and acceptance criteria are understood.
+4. Requirements are converted into a consistent URS.
+5. Requirements preserve their source references.
+6. Duplicate candidates are identified.
+7. Conflicts are detected and preserved.
+8. Missing information is identified.
+9. The URS can be retrieved and reviewed through the frontend.
+10. Users can edit requirements and resolve conflicts.
+11. Approval restrictions work correctly.
+12. Existing functionality remains operational.
+13. Relevant automated tests pass.
+
+At completion, provide:
+- Architecture changes.
+- Files created and modified.
+- New API endpoints.
+- Database changes.
+- AI models and configurations used.
+- Tests executed and results.
+- Known limitations.
+- Features remaining for the next milestone.
+
+Do not claim any functionality is complete unless it has actually been implemented and tested.
