@@ -1,0 +1,518 @@
+# Milestone 4: Intelligent Test Case Generation Engine
+
+## Project Context
+
+I am developing an Autonomous Software Testing Agent called Autonomous QA Studio.
+
+The existing application contains:
+
+- Next.js frontend.
+- Python FastAPI backend.
+- OpenAI integration.
+- Text-based test case generation.
+- Multi-source document ingestion.
+- PDF, DOCX, XLSX, CSV, PPTX and image extraction.
+- Embedded screenshot extraction.
+- AI-based requirement understanding.
+- Unified Requirement Specification (URS).
+- Requirement consolidation and conflict detection.
+- Human review and approval of requirements.
+
+Now I want to implement an intelligent test case generation engine.
+
+The engine must take an approved URS and generate comprehensive, structured and traceable test cases.
+
+## 1. Inspect the Existing Project
+
+Before implementation:
+
+1. Inspect the existing backend and frontend.
+2. Understand the current URS schema.
+3. Inspect how approved specifications are stored.
+4. Inspect the existing text-based test generation implementation.
+5. Understand existing OpenAI integration.
+6. Inspect current test case schemas and API endpoints.
+7. Identify reusable components.
+
+Important:
+- Preserve existing functionality.
+- Reuse the existing AI integration.
+- Do not create duplicate test generation services.
+- Do not break the existing text-based generation endpoint.
+- Do not regenerate requirements unnecessarily.
+- Use approved URS records as the authoritative source.
+
+## 2. Test Planning Engine
+
+Before generating individual test cases, create a Test Planning Engine.
+
+Its responsibility is to analyze approved requirements and determine:
+
+- What functionality needs testing.
+- What business rules need validation.
+- What user workflows need testing.
+- What UI components need testing.
+- What boundary conditions exist.
+- What negative scenarios are relevant.
+- What security scenarios are appropriate.
+- Which requirements depend on other requirements.
+
+The planning engine should create a structured test plan.
+
+Example:
+
+{
+  "test_plan_id": "PLAN_001",
+  "specification_id": "URS_001",
+  "modules": [
+    {
+      "module_name": "User Registration",
+      "requirement_ids": ["REQ_001", "REQ_002"],
+      "test_categories": [
+        "positive",
+        "negative",
+        "boundary",
+        "validation"
+      ]
+    }
+  ]
+}
+
+Avoid generating irrelevant test categories for every requirement.
+
+## 3. Test Case Generation
+
+Generate test cases based on approved requirements.
+
+Support the following categories:
+
+### Functional Testing
+- Positive scenarios.
+- Negative scenarios.
+- Business workflow validation.
+- Functional behavior.
+
+### Validation Testing
+- Mandatory field validation.
+- Incorrect input formats.
+- Invalid data.
+- Missing values.
+- Field constraints.
+
+### Boundary Testing
+- Minimum values.
+- Maximum values.
+- Values just below limits.
+- Values just above limits.
+- Empty and null values where relevant.
+
+### Security Testing
+- Input injection scenarios.
+- Authentication checks.
+- Authorization checks.
+- Session-related checks.
+- Sensitive data exposure checks.
+
+Only generate security scenarios relevant to the available requirements and application context. Mark scenarios requiring security-specific specifications or authorization as assumptions.
+
+### UI Interaction Testing
+- Button interactions.
+- Form submission.
+- Navigation.
+- Input field behavior.
+- Dropdown selection.
+- Checkbox and radio button behavior.
+- Error message visibility.
+- Screen transitions.
+
+### Visual Testing
+Generate visual validation scenarios from approved UI mockups and screen specifications.
+
+Examples:
+- Verify expected UI components are present.
+- Verify field alignment.
+- Verify component positioning.
+- Verify colors and typography against the reference.
+- Verify spacing and layout.
+- Verify responsive layout when appropriate reference designs are available.
+
+Keep visual expectations linked to the original mockup or screenshot.
+
+### State Transition Testing
+- Valid state transitions.
+- Invalid transitions.
+- Workflow completion.
+- Unauthenticated versus authenticated states.
+- Pending, approved, rejected or completed states where relevant.
+
+### Edge Case Testing
+Identify meaningful unusual conditions based on requirements.
+
+Do not create arbitrary edge cases without a reasonable basis.
+
+## 4. Test Case Structure
+
+Every test case must follow a consistent Pydantic schema.
+
+Suggested structure:
+
+{
+  "test_case_id": "TC_001",
+  "title": "Verify registration with valid credentials",
+  "description": "Verify that a new user can register successfully.",
+  "requirement_ids": ["REQ_001"],
+  "category": "positive",
+  "test_type": "functional",
+  "priority": "high",
+  "preconditions": [
+    "Registration page is accessible",
+    "Email is not already registered"
+  ],
+  "test_data": {
+    "email": "test@example.com",
+    "password": "ValidPassword123"
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "Enter a valid email address",
+      "expected_result": "Email is accepted"
+    },
+    {
+      "step_number": 2,
+      "action": "Enter a valid password",
+      "expected_result": "Password is accepted"
+    },
+    {
+      "step_number": 3,
+      "action": "Click Register",
+      "expected_result": "Registration is submitted successfully"
+    }
+  ],
+  "expected_results": [
+    "Registration succeeds",
+    "Verification email is triggered"
+  ],
+  "automation_feasibility": "high",
+  "automation_notes": [],
+  "assumptions": [],
+  "confidence": 0.95,
+  "source_references": [
+    {
+      "requirement_id": "REQ_001"
+    }
+  ]
+}
+
+Adapt this schema to the existing architecture.
+
+Use stable, unique test case IDs.
+
+Ensure test steps are detailed enough for a future browser automation engine to interpret.
+
+## 5. UI Mockup-Based Test Generation
+
+Use the UI component specifications and original image references stored in the approved URS.
+
+For each screen:
+
+- Identify relevant interactive components.
+- Generate potential interaction scenarios.
+- Generate validation scenarios when supported by requirements.
+- Generate navigation scenarios when the destination is known.
+- Generate visual comparison scenarios.
+- Link each test case to its screen ID and source image ID.
+
+Important:
+
+A static screenshot does not establish the actual behavior of a button, field or link.
+
+If expected behavior is not specified:
+- Mark the scenario as inferred.
+- Include the assumption.
+- Do not represent inferred behavior as a confirmed requirement.
+
+For visual tests, preserve the reference image ID so the future Playwright engine can retrieve the original image.
+
+## 6. Requirement Traceability
+
+Every generated test case must reference one or more approved requirement IDs.
+
+Implement traceability in both directions:
+
+Requirement -> Generated Test Cases
+
+Test Case -> Source Requirements
+
+Generate a coverage summary:
+
+{
+  "total_requirements": 20,
+  "covered_requirements": 17,
+  "uncovered_requirements": 3,
+  "coverage_percentage": 85,
+  "uncovered_requirement_ids": [
+    "REQ_014",
+    "REQ_017",
+    "REQ_020"
+  ]
+}
+
+Calculate coverage from actual mappings, not from LLM-generated percentages.
+
+Identify:
+- Requirements with no test cases.
+- Requirements with insufficient scenario coverage.
+- Test cases without valid requirement references.
+- Requirements covered only by inferred test cases.
+
+Do not claim 100% coverage simply because every requirement has one test case.
+
+## 7. Test Case Quality Validation Engine
+
+After generation, validate the test cases.
+
+Check for:
+
+- Duplicate test cases.
+- Missing test steps.
+- Missing expected results.
+- Invalid requirement references.
+- Inconsistent priority.
+- Invalid categories.
+- Missing preconditions where needed.
+- Ambiguous test actions.
+- Unsupported assumptions.
+- Contradictory expected results.
+
+Implement deterministic validation wherever possible.
+
+The LLM may assist in semantic duplicate detection, but use application logic for schema and reference validation.
+
+Invalid test cases must not silently become approved test cases.
+
+## 8. Test Suite Organization
+
+Group generated test cases by:
+
+- Project.
+- Specification version.
+- Module.
+- Requirement.
+- Test category.
+- Priority.
+
+Allow multiple test suites for a project.
+
+Support regeneration when requirements change without unnecessarily deleting previously approved test cases.
+
+Preserve relationships between test suites and specification versions.
+
+## 9. Human Review
+
+Before execution, allow users to review generated test cases.
+
+Users should be able to:
+
+- View individual test cases.
+- Edit titles and descriptions.
+- Edit test steps.
+- Edit expected results.
+- Change priority.
+- Add test data.
+- Delete irrelevant test cases.
+- Approve test cases.
+- Reject test cases.
+
+Track whether a test case is:
+- Generated.
+- Needs review.
+- Approved.
+- Rejected.
+- Modified by user.
+
+Do not automatically approve all generated cases.
+
+## 10. Backend APIs
+
+Follow existing FastAPI conventions.
+
+Suggested APIs:
+
+POST /api/test-suites/generate
+
+Input:
+- Approved specification ID.
+- Optional selected requirement IDs.
+- Optional generation settings.
+
+Behavior:
+- Retrieve approved URS.
+- Generate test plan.
+- Generate test cases.
+- Validate generated test cases.
+- Calculate requirement coverage.
+- Save the test suite.
+- Return structured results.
+
+GET /api/test-suites/{suite_id}
+
+Retrieve the complete test suite.
+
+GET /api/test-suites/{suite_id}/coverage
+
+Retrieve requirement coverage information.
+
+PATCH /api/test-cases/{test_case_id}
+
+Update an individual test case.
+
+POST /api/test-cases/{test_case_id}/approve
+
+Approve a test case.
+
+POST /api/test-cases/{test_case_id}/reject
+
+Reject a test case.
+
+Adapt endpoint naming to the existing architecture.
+
+## 11. Frontend Integration
+
+Extend the existing Autonomous QA Studio dashboard.
+
+Add a Test Generation interface.
+
+### Generation Page
+
+- Select an approved specification.
+- Select all or specific requirements.
+- Choose relevant test categories.
+- Configure generation settings.
+- Start generation.
+- Display progress and errors.
+
+### Test Suite Dashboard
+
+Display:
+- Total test cases.
+- Positive test cases.
+- Negative test cases.
+- Boundary test cases.
+- UI test cases.
+- Visual test cases.
+- High, medium and low priority counts.
+- Requirement coverage percentage.
+- Uncovered requirements.
+
+### Test Case Explorer
+
+Provide:
+- Search.
+- Category filters.
+- Priority filters.
+- Requirement filters.
+- Sorting.
+- Pagination.
+- Test case details.
+- Editing and approval controls.
+
+### Coverage View
+
+Display:
+- Total requirements.
+- Covered requirements.
+- Uncovered requirements.
+- Test cases mapped to each requirement.
+
+Allow users to navigate from a requirement to its related test cases.
+
+### Export
+
+Support:
+- JSON export.
+- CSV export.
+
+Keep the existing application design consistent.
+
+## 12. Reliability and AI Validation
+
+- Use structured output where supported.
+- Validate LLM responses using Pydantic.
+- Retry malformed outputs in a controlled manner.
+- Prevent fabricated requirement IDs.
+- Validate every source reference against the approved URS.
+- Prevent duplicate test case IDs.
+- Keep confidence and assumptions visible.
+- Log generation errors safely.
+- Handle API rate limits and timeouts.
+
+Do not let the LLM determine actual execution results.
+
+A generated test case is not a passed test case.
+
+## 13. Testing
+
+Add tests for:
+
+- Positive test case generation.
+- Negative test case generation.
+- Boundary scenarios.
+- Validation scenarios.
+- UI mockup-based scenarios.
+- Visual test scenarios.
+- Multiple requirements.
+- Requirement traceability.
+- Coverage calculations.
+- Duplicate test case detection.
+- Invalid requirement references.
+- Missing expected results.
+- Malformed LLM output.
+- Specification version handling.
+- Test case editing.
+- Approval and rejection.
+
+Mock LLM calls in unit tests.
+
+Ensure existing tests and text-based generation continue working.
+
+## 14. Scope Restrictions
+
+Do not implement yet:
+
+- Playwright browser execution.
+- Autonomous browser exploration.
+- Screenshot capture during execution.
+- Self-healing selectors.
+- CI/CD integration.
+- RAG or vector databases.
+
+These belong to future milestones.
+
+## 15. Completion Criteria
+
+This milestone is complete only when:
+
+1. An approved URS can be selected.
+2. A structured test plan can be generated.
+3. Relevant test cases are generated for approved requirements.
+4. UI mockup information contributes to relevant UI and visual test cases.
+5. Every test case has valid requirement traceability.
+6. Coverage is calculated correctly.
+7. Duplicates and invalid test cases are detected.
+8. Users can review, edit, approve and reject test cases.
+9. Test suites can be retrieved and exported.
+10. Existing functionality continues working.
+11. Relevant automated tests pass.
+
+At completion, provide:
+- Architecture changes.
+- Files created and modified.
+- New APIs.
+- Database changes.
+- AI configuration.
+- Test results.
+- Known limitations.
+- Remaining work for the next milestone.
+
+Do not claim any functionality is complete unless it has actually been implemented and tested.
