@@ -1,0 +1,238 @@
+# Task: Build the Frontend UI for Autonomous QA Studio
+
+I want to build the frontend interface for my Autonomous Software Testing Agent.
+
+The application should allow users to upload different types of software requirements, generate test cases using AI, and view, search, filter, and manage the generated test cases.
+
+## 1. First inspect the existing project
+
+Before writing code:
+
+- Inspect the complete repository structure.
+- Identify the existing frontend and backend technologies.
+- Identify existing API endpoints, request schemas, and response schemas.
+- Check which parts of Milestone 1 have already been implemented.
+- Reuse existing code wherever possible.
+- Do not overwrite or break existing functionality.
+- Do not create a duplicate backend or a second frontend project unnecessarily.
+
+Our existing backend architecture is Python + FastAPI, with OpenAI integration for test case generation. The frontend can use Anular if no frontend already exists.
+
+## 2. Application layout
+
+Build a modern SaaS-style application named "Autonomous QA Studio".
+
+Use a clean, professional design suitable for an enterprise software testing platform.
+
+Create the following pages:
+
+### A. Dashboard
+
+Display:
+- Total projects.
+- Total generated test cases.
+- Recent testing projects.
+- Recent test generation activities.
+- Quick action to create a new testing project.
+
+### B. Requirement Upload / Test Generation Page
+
+This is the primary page.
+
+Provide the following input options:
+
+**Document Upload**
+- PDF
+- DOCX
+- TXT
+
+**Spreadsheet Upload**
+- XLSX
+- CSV
+
+**UI Mockup Upload**
+- PNG
+- JPG
+- JPEG
+
+**User Stories**
+- Provide a text editor or textarea where users can paste user stories.
+- Support multiple user stories and acceptance criteria.
+
+**Additional Requirements**
+- Provide an optional text area for additional business requirements.
+
+Upload functionality:
+- Support multiple file uploads.
+- Support drag and drop.
+- Provide file selection through the browse button.
+- Display uploaded file names, file types, and sizes.
+- Allow users to remove uploaded files before submission.
+- Validate supported file formats.
+- Show upload and processing progress.
+- Show appropriate error messages.
+
+Add a prominent "Generate Test Cases" button.
+
+### C. Generated Test Cases Page
+
+After successful generation, display the test cases in a professional table.
+
+Include the following columns:
+
+- Test Case ID
+- Test Scenario
+- Requirement ID
+- Test Category
+- Priority
+- Preconditions
+- Expected Result
+- Automation Feasibility
+- Actions
+
+Supported categories should include:
+- Functional
+- Negative
+- Positive
+- Boundary
+- Validation
+- Security
+- Visual
+- Edge Case
+
+Add:
+- Search by test case ID or scenario.
+- Filter by category.
+- Filter by priority.
+- Sort by priority.
+- Pagination.
+- View details action.
+- Edit test case action.
+- Delete test case action.
+
+### D. Test Case Details
+
+When a user opens a test case, show:
+
+- Test case ID
+- Test scenario
+- Description
+- Related requirement
+- Requirement source document
+- Preconditions
+- Test steps
+- Expected results
+- Test data
+- Priority
+- Category
+- Automation feasibility
+- Assumptions
+- Confidence level
+
+Provide an edit option.
+
+### E. Project Details
+
+Each project should contain:
+- Project name
+- Description
+- Uploaded requirement files
+- Generated test cases
+- Creation date
+- Last updated date
+
+Keep the architecture ready for multiple projects.
+
+## 3. Backend Integration
+
+Connect the frontend to the existing FastAPI backend.
+
+Important:
+- Inspect the actual API endpoints and schemas before integration.
+- Do not invent API response fields.
+- Use environment variables for backend URLs.
+- Create a reusable API service layer.
+- Implement loading, success, and error states.
+- Do not hardcode generated test cases as actual AI results.
+
+If the existing backend only accepts plain-text requirements, integrate that functionality first.
+
+For file uploads, build the complete frontend upload experience and prepare a clean API integration layer. If the backend does not yet support document extraction, do not pretend that files have been processed or generate fabricated test cases. Clearly indicate that file processing needs backend support.
+
+Keep the architecture ready for a future multipart upload endpoint that accepts multiple documents and images.
+
+## 4. Test Case Data Handling
+
+Use the actual response schema returned by the backend.
+
+The frontend should be flexible enough to display structured test cases containing:
+
+- Unique test case ID
+- Requirement ID
+- Scenario
+- Description
+- Category
+- Priority
+- Preconditions
+- Steps
+- Expected results
+- Test data
+- Assumptions
+- Confidence
+- Source references
+
+Do not assume every field will always be present. Handle optional fields gracefully.
+
+## 5. UI/UX Requirements
+
+- Professional enterprise SaaS dashboard.
+- Responsive design for desktop, tablet, and mobile.
+- Sidebar navigation.
+- Consistent typography and spacing.
+- Good empty states.
+- Loading skeletons.
+- Toast notifications.
+- Confirmation dialogs for destructive actions.
+- Accessible buttons and forms.
+- No unnecessary animations.
+- Avoid cluttered screens.
+
+## 6. Future Integration Readiness
+
+Keep the frontend architecture ready for these future features:
+
+1. Document understanding and extraction.
+2. UI mockup understanding using vision models.
+3. Unified Requirement Specification.
+4. Requirement conflict detection.
+5. Human approval of extracted requirements.
+6. Playwright browser execution.
+7. PASS/FAIL test reports.
+8. Screenshots and execution evidence.
+
+Do not implement these future features unless they are already supported by the backend.
+
+## 7. Important Development Rules
+
+- Use reusable components.
+- Separate API logic from UI components.
+- Use TypeScript types/interfaces.
+- Follow a clean folder structure.
+- Avoid unnecessary dependencies.
+- Preserve existing backend functionality.
+- Do not introduce fake AI responses.
+- Do not break existing Milestone 1 APIs.
+- Add appropriate frontend tests.
+- Update README with setup and run instructions.
+
+## Final Deliverable
+
+Implement the frontend, integrate the existing text-based test generation API, and provide the upload interface ready for future document-processing integration.
+
+After implementation:
+1. Run the application.
+2. Test all major frontend flows.
+3. Test integration with the existing backend.
+4. Fix build errors and runtime errors.
+5. Explain the files created or modified.
+6. Clearly identify any backend functionality still required for full document and image processing.
