@@ -6,7 +6,7 @@ I am developing an Autonomous Software Testing Agent called Autonomous QA Studio
 
 The existing application contains:
 
-- Next.js frontend.
+- Angular frontend.
 - Python FastAPI backend.
 - OpenAI integration.
 - Text-based test case generation.
