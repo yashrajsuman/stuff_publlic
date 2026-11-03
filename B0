@@ -1,0 +1,545 @@
+# Milestone 2: Multi-Source Requirement Ingestion and Multimodal Document Extraction
+
+## Project Context
+
+I am building an Autonomous Software Testing Agent called Autonomous QA Studio.
+
+The existing application has:
+- A frontend dashboard.
+- A Python FastAPI backend.
+- OpenAI integration for generating test cases from plain-text requirements.
+- An existing text-based test generation API.
+
+I now want to extend the backend so users can upload multiple types of software requirement documents, including documents containing both text and images.
+
+The objective of this milestone is to build a reliable document ingestion and extraction engine that prepares content for future AI-based requirement understanding and test case generation.
+
+## 1. First Inspect the Existing Project
+
+Before making any changes:
+
+1. Inspect the complete repository structure.
+2. Understand the existing FastAPI backend architecture.
+3. Inspect existing API endpoints, request schemas and response schemas.
+4. Understand how the frontend communicates with the backend.
+5. Identify existing file handling and storage mechanisms.
+6. Identify existing dependencies and reusable services.
+7. Preserve existing functionality.
+
+Important:
+- Do not replace the existing text-based test generation implementation.
+- Do not break existing APIs.
+- Do not create duplicate backend projects.
+- Reuse existing components wherever possible.
+- Follow the existing project structure and coding conventions.
+
+## 2. Supported File Formats
+
+The system must support the following input formats:
+
+| File Type | Extensions |
+|---|---|
+| PDF | .pdf |
+| Word | .docx |
+| Excel | .xlsx |
+| PowerPoint | .pptx |
+| CSV | .csv |
+| Text | .txt |
+| Images | .png, .jpg, .jpeg |
+
+Users must be able to upload multiple files in a single request.
+
+A document must not be treated as text-only simply because its extension is PDF, DOCX or PPTX. It may contain screenshots, diagrams, wireframes and other visual information.
+
+## 3. File Upload API
+
+Create an endpoint:
+
+POST /api/requirements/upload
+
+The endpoint should:
+
+- Accept multiple files using multipart/form-data.
+- Accept an optional project ID if project support already exists.
+- Validate extensions and MIME types.
+- Validate actual file signatures wherever practical.
+- Enforce configurable file size and file count limits.
+- Reject unsupported, corrupted and empty files.
+- Generate unique server-side file identifiers.
+- Process files independently.
+- Return processing status for each file.
+- Handle partial failures without losing successful results from other files.
+
+Do not allow arbitrary filenames or file paths to be used for filesystem access.
+
+## 4. Document Content Extraction
+
+Implement separate, reusable extraction services for each format.
+
+### A. PDF Processing
+
+Use PyMuPDF or another appropriate PDF processing library.
+
+Requirements:
+
+- Extract text page by page.
+- Preserve page numbers.
+- Extract embedded images wherever possible.
+- Preserve image-to-page relationships.
+- Detect pages with little or no extractable text.
+- Identify scanned pages.
+- Support rendering complete pages as images when necessary.
+- Preserve tables and reading order as accurately as practical.
+- Avoid unnecessary duplicate image extraction.
+
+For scanned pages:
+- Mark them as requiring OCR.
+- Prepare page images for future OCR and vision-model processing.
+- Do not silently report empty scanned pages as successfully extracted.
+
+### B. DOCX Processing
+
+Use python-docx and appropriate DOCX package relationship handling.
+
+Requirements:
+
+- Extract headings.
+- Extract paragraphs.
+- Extract tables.
+- Extract embedded images.
+- Preserve document order as accurately as possible.
+- Preserve image placement and relationships.
+- Extract image captions where possible.
+- Associate images with nearby headings and descriptive paragraphs.
+- Preserve section information.
+
+Important:
+DOCX images are stored as relationships in the underlying document package. Ensure that embedded images are actually extracted rather than only extracting text through python-docx.
+
+### C. XLSX Processing
+
+Use openpyxl.
+
+Requirements:
+
+- Extract workbook sheet names.
+- Extract non-empty rows and cell values.
+- Preserve row and column information.
+- Extract tables and validation rules where practical.
+- Extract embedded images when present.
+- Preserve the sheet name and image location.
+
+### D. CSV Processing
+
+Requirements:
+
+- Extract headers and rows.
+- Handle different encodings.
+- Handle malformed files safely.
+- Preserve row numbers and column names.
+
+### E. TXT Processing
+
+Requirements:
+
+- Extract plain text.
+- Preserve meaningful line breaks.
+- Handle encoding issues safely.
+
+### F. PPTX Processing
+
+Use python-pptx.
+
+Requirements:
+
+- Extract slide titles and text.
+- Extract tables.
+- Extract embedded images.
+- Preserve slide numbers.
+- Preserve image positions.
+- Associate images with relevant slide text.
+
+### G. Standalone Image Processing
+
+Supported:
+- PNG
+- JPG
+- JPEG
+
+Requirements:
+
+- Validate image format and dimensions.
+- Check file size.
+- Generate unique image identifiers.
+- Preserve original image files.
+- Prepare images for future multimodal AI processing.
+- Do not fabricate image descriptions.
+- Do not claim vision analysis has been completed.
+
+## 5. Embedded Image and Screenshot Extraction
+
+This is a critical requirement.
+
+Documents can contain:
+- Application screenshots.
+- UI mockups.
+- Wireframes.
+- Flowcharts.
+- Architecture diagrams.
+- Business process diagrams.
+- Other visual references.
+
+The system must extract these images even when they are embedded inside PDF, DOCX, PPTX or XLSX files.
+
+For every extracted image, maintain metadata similar to:
+
+{
+  "image_id": "IMG_001",
+  "filename": "registration_screen.png",
+  "source_document": "Registration_SRS.docx",
+  "source_location": {
+    "section": "Registration Requirements",
+    "page": null,
+    "slide": null,
+    "sheet": null
+  },
+  "position": {
+    "order": 4
+  },
+  "associated_text": null,
+  "processing_status": "pending_vision_analysis"
+}
+
+Adapt the schema to the actual implementation.
+
+Additional requirements:
+
+- Preserve original document references.
+- Preserve image order and position where possible.
+- Extract captions and nearby descriptive text.
+- Associate images with relevant sections where possible.
+- Do not assume every nearby paragraph describes the image.
+- Mark uncertain associations for future review.
+- Keep original extracted images available for future AI processing.
+
+If a PDF contains a full-page screenshot rather than a separately embedded image, support page rendering so the visual content is not lost.
+
+## 6. Context Association Engine
+
+Build a reusable mechanism that connects extracted content.
+
+For example:
+
+Document: Registration_SRS.docx
+
+Section: User Registration
+
+Text:
+"Users should be able to register using their email and password."
+
+Image:
+IMG_001
+
+Caption:
+"Registration screen"
+
+The output should preserve the relationship between the section, text and image.
+
+The association mechanism should consider:
+
+- Document reading order.
+- Section headings.
+- Nearby paragraphs.
+- Image captions.
+- Tables.
+- Page numbers.
+- Slide numbers.
+
+Do not make unsupported assumptions about image meaning.
+
+Keep uncertain associations explicitly marked for review.
+
+## 7. Unified Extraction Response
+
+All extraction services should produce a consistent structured response.
+
+Suggested structure:
+
+{
+  "file_id": "FILE_001",
+  "filename": "Registration_SRS.docx",
+  "file_type": "docx",
+  "status": "processed",
+  "content_blocks": [
+    {
+      "block_id": "BLOCK_001",
+      "content_type": "text",
+      "content": "Users must register using their email address.",
+      "source": {
+        "section": "User Registration"
+      }
+    },
+    {
+      "block_id": "BLOCK_002",
+      "content_type": "image",
+      "image_id": "IMG_001",
+      "content": null,
+      "source": {
+        "section": "User Registration"
+      }
+    }
+  ],
+  "images": [
+    {
+      "image_id": "IMG_001",
+      "filename": "registration_screen.png",
+      "processing_status": "pending_vision_analysis"
+    }
+  ],
+  "warnings": [],
+  "processing_summary": {
+    "text_extraction": "completed",
+    "image_extraction": "completed",
+    "ocr": "not_required",
+    "vision_analysis": "pending"
+  }
+}
+
+This is an illustrative schema. Adapt it to the existing architecture.
+
+Ensure every content block retains source provenance.
+
+## 8. Storage and File Management
+
+Implement a controlled file storage mechanism.
+
+Requirements:
+
+- Store original uploaded documents.
+- Store extracted images separately.
+- Store extracted structured content.
+- Generate unique IDs.
+- Avoid filename collisions.
+- Prevent path traversal.
+- Do not expose internal filesystem paths through APIs.
+- Configure upload storage using environment variables where appropriate.
+- Implement safe temporary file cleanup.
+- Keep original documents available for later reprocessing.
+
+If the project already has a database, follow its existing persistence architecture. Do not introduce a new database unnecessarily.
+
+## 9. Large Document Handling
+
+Some users may upload documents containing hundreds of pages.
+
+Requirements:
+
+- Process documents page by page or in manageable sections.
+- Avoid unnecessarily loading entire large documents into memory.
+- Preserve source references during extraction.
+- Set configurable file size and upload limits.
+- Handle extraction failures at the page or file level.
+- Prepare extracted content for future token-aware chunking.
+- Avoid sending large documents to the LLM in this milestone.
+
+Do not introduce RAG or vector databases at this stage.
+
+## 10. Future Multimodal AI Integration
+
+Prepare the architecture for a future AI requirement-understanding engine.
+
+The next milestone should be able to send:
+
+**Textual content:**
+- Extracted document text.
+- Headings and paragraphs.
+- Structured tables.
+- Spreadsheet data.
+- User stories and acceptance criteria.
+
+**Visual content:**
+- Actual embedded screenshots.
+- UI mockups.
+- Flowcharts.
+- Architecture diagrams.
+- Rendered scanned PDF pages.
+
+**Context:**
+- Original filename.
+- Page number.
+- Section.
+- Slide number.
+- Sheet name.
+- Image ID.
+- Associated text.
+
+The future multimodal LLM should be able to analyze the actual image alongside its relevant textual context.
+
+Keep text extraction, image extraction, OCR and vision analysis as separate processing stages.
+
+Do not implement fake AI image descriptions or fabricated vision-analysis results.
+
+Do not integrate OpenAI vision analysis in this milestone unless it is already supported by existing code and can be implemented without expanding the scope.
+
+## 11. Processing Status Management
+
+Clearly distinguish the following statuses:
+
+- Upload completed.
+- Text extraction completed.
+- Image extraction completed.
+- OCR completed.
+- OCR pending.
+- Vision analysis completed.
+- Vision analysis pending.
+- Partially processed.
+- Failed.
+
+A document containing screenshots must never be reported as completely processed if only its text was extracted.
+
+For example, if the text extraction succeeds but image extraction fails, report partial processing and include the relevant warning.
+
+## 12. Security and Validation
+
+Implement:
+
+- File extension validation.
+- MIME type validation.
+- File signature validation wherever practical.
+- File size limits.
+- File count limits.
+- Unique server-side filenames.
+- Safe storage paths.
+- Path traversal prevention.
+- Protection against malformed files.
+- Controlled temporary file cleanup.
+- Safe error handling.
+- No execution of uploaded files.
+
+Do not expose stack traces, internal paths or sensitive server information in API responses.
+
+## 13. Testing
+
+Write unit and integration tests for:
+
+### File upload
+- Single file upload.
+- Multiple file upload.
+- Unsupported extension.
+- Invalid MIME type.
+- Corrupted file.
+- Empty file.
+- Oversized file.
+- Missing file.
+- Duplicate filenames.
+
+### PDF
+- Text-based PDF.
+- PDF containing embedded images.
+- PDF containing multiple pages.
+- PDF with full-page screenshots.
+- Scanned PDF.
+- Corrupted PDF.
+
+### DOCX
+- Text-only DOCX.
+- DOCX containing embedded screenshots.
+- DOCX containing multiple images.
+- DOCX containing captions.
+- DOCX containing headings and tables.
+- DOCX with multiple sections.
+
+### XLSX and CSV
+- Multiple sheets.
+- Empty rows.
+- Embedded images in XLSX.
+- Invalid CSV.
+- Different encodings.
+
+### PPTX
+- Multiple slides.
+- Slides containing text and images.
+- Slides containing tables.
+
+Verify that:
+- Extracted images are actually saved.
+- Image identifiers are unique.
+- Source references are preserved.
+- Image associations are returned.
+- Processing statuses are accurate.
+- Partial failures are handled correctly.
+
+Use small test fixtures and do not require an OpenAI API key for extraction tests.
+
+## 14. Dependencies and Documentation
+
+Choose appropriate libraries, including:
+
+- PyMuPDF for PDF processing.
+- python-docx for DOCX processing.
+- openpyxl for XLSX processing.
+- python-pptx for PPTX processing.
+- Pillow for image validation.
+- Appropriate CSV and ZIP/XML processing utilities.
+
+Use pytesseract or another OCR tool only if needed, and document its system-level installation requirements.
+
+Update README with:
+
+- Supported formats.
+- Installation instructions.
+- New dependencies.
+- Upload API documentation.
+- Request and response examples.
+- File size limits.
+- Storage configuration.
+- Extraction workflow.
+- Known limitations.
+- OCR and vision-analysis status.
+
+## 15. Scope Restrictions
+
+Do not implement the following in this milestone:
+
+- RAG.
+- Vector databases.
+- Requirement consolidation.
+- Duplicate requirement detection.
+- Conflict detection.
+- AI-based requirement extraction.
+- AI-based test case generation from uploaded documents.
+- Playwright execution.
+- Autonomous browser interaction.
+
+These belong to future milestones.
+
+The goal here is to build a reliable ingestion and extraction foundation.
+
+## 16. Final Completion Criteria
+
+Before declaring this milestone complete:
+
+1. Multiple supported files must upload successfully.
+2. Text must be extracted from supported document formats.
+3. Embedded images must be extracted from documents.
+4. PDF screenshots and scanned pages must be handled appropriately.
+5. Original source references must be preserved.
+6. Text and images must be represented in a consistent structured response.
+7. Processing statuses must accurately reflect completed and pending operations.
+8. Existing plain-text test generation must continue working.
+9. All relevant tests must pass.
+10. README must be updated.
+
+At the end, provide:
+
+- Summary of implementation.
+- Files created and modified.
+- Dependencies added.
+- APIs created.
+- Storage approach.
+- Tests executed and their results.
+- Features completed.
+- Known limitations.
+- Remaining work for the next milestone.
+
+Do not claim a feature is implemented unless it has actually been implemented and tested.
