@@ -1,0 +1,54 @@
+We have completed the initial project foundation. The following modules are still not implemented:
+
+- Document extraction and OCR
+- GPT-based requirement analysis
+- Test case generation and approval
+- Browser computer-interaction worker
+- Screenshot-driven AI execution loop
+- Evidence collection
+- WebSocket execution monitoring
+- Reporting
+
+Before implementing these modules, inspect the existing repository and identify:
+
+1. Existing frontend framework and architecture.
+2. Existing backend structure.
+3. Existing database schema and migrations.
+4. Existing authentication and project management implementations.
+5. Existing API contracts.
+6. Existing environment variable configuration.
+7. Which components are functional versus incomplete.
+
+IMPORTANT ARCHITECTURE DECISION:
+
+The original architecture specified Next.js, but the current implementation appears to use Angular. Do not migrate or rewrite the frontend. Continue using the existing Angular architecture unless explicitly instructed otherwise.
+
+Keep the existing working implementations intact.
+
+We will implement the remaining functionality incrementally.
+
+For now, DO NOT implement all pending modules.
+
+Your immediate task is to prepare a detailed implementation plan for the following first module:
+
+DOCUMENT EXTRACTION AND PROCESSING.
+
+Explain:
+- Files that need to be created or modified.
+- Database changes required.
+- Backend APIs required.
+- Supported file formats.
+- PDF text extraction strategy.
+- DOCX extraction strategy.
+- Embedded screenshot and image extraction strategy.
+- OCR strategy for scanned documents.
+- How extracted text and images will be associated with their source documents and pages.
+- How the extracted content will be prepared for GPT-5.6 Luna.
+- Error handling and processing status management.
+- Testing strategy.
+
+Do not start implementation until you have presented this plan.
+
+Do not use mock extraction results or hardcoded document content.
+
+The document-processing architecture must support both text-based and image-heavy documents. Extracting text alone is insufficient because screenshots and diagrams inside documents may contain important application requirements.
