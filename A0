@@ -1,0 +1,603 @@
+# Build an AI-Powered Autonomous Web Testing Platform
+
+## 1. Project Objective
+
+Build a web-based AI-powered software testing platform that can understand application requirements, generate test cases using an LLM, execute approved test cases by visually interacting with a browser through mouse and keyboard, observe application behaviour using screenshots, validate expected outcomes, and generate detailed testing reports.
+
+The platform must NOT depend on Selenium, Playwright, Cypress, Appium, or commercial AI testing platforms for browser interaction or test execution.
+
+The core idea is to build our own computer-interaction-based testing engine, where GPT-5.6 Luna acts as the intelligence layer.
+
+This is the first version (MVP), targeting Level 1 autonomy.
+
+Level 1 means:
+- Users provide requirements and optionally UI mockups.
+- AI generates test cases.
+- Users review and approve test cases.
+- AI executes approved test cases.
+- AI observes the application through screenshots.
+- AI determines whether expected results were achieved.
+- The platform generates reports with evidence.
+
+Do not implement fully autonomous application exploration in this version.
+
+## 2. Technology Stack
+
+### Frontend
+- Angular
+- Modern, responsive dashboard UI
+
+### Backend
+- Python
+- FastAPI
+- REST APIs
+- Pydantic for validation
+
+### AI Integration
+- GPT-5.6 Luna through an organization-provided API endpoint.
+- Implement a provider-independent AI integration layer.
+- Keep model name, endpoint and authentication configurable through environment variables.
+- Never hardcode credentials or API keys.
+- Support text and image inputs if the organization's endpoint permits them.
+- Use structured JSON responses wherever supported.
+
+### Computer Interaction Engine
+- Python
+- PyAutoGUI for mouse and keyboard interactions
+- Pillow for screenshots
+- OpenCV for image processing
+- Chromium browser running inside an isolated Linux virtual desktop.
+- Use Xvfb or an appropriate virtual display environment.
+
+Do not use Selenium, Playwright, Cypress or browser DOM selectors for interaction.
+
+### Database and Storage
+- PostgreSQL
+- SQLAlchemy
+- Redis for execution queues and job coordination
+- Local/object storage for screenshots and uploaded documents.
+
+## 3. Application Modules
+
+### Module A: Dashboard
+
+Create a professional dashboard displaying:
+
+- Total projects
+- Total generated test cases
+- Approved test cases
+- Total executions
+- Passed tests
+- Failed tests
+- Inconclusive tests
+- Recent test executions
+- Recent project activity
+
+Include appropriate charts and execution summaries.
+
+### Module B: Project Management
+
+Users should be able to:
+
+- Create projects.
+- Edit project details.
+- Delete projects with confirmation.
+- Configure application name and target URL.
+- Configure testing environment.
+- View project-specific requirements and test cases.
+- View execution history.
+
+Each project must maintain isolated requirements, test cases, executions and evidence.
+
+### Module C: Requirement and Document Management
+
+Allow users to upload:
+
+- PDF files
+- DOCX files
+- TXT files
+- PNG/JPG screenshots
+- Multiple documents per project.
+
+Important requirements:
+
+1. Extract text from documents.
+2. Extract images and screenshots embedded inside PDFs and DOCX files.
+3. Preserve relationships between text and associated screenshots wherever possible.
+4. Use OCR when scanned documents contain text that cannot be extracted directly.
+5. Process uploaded images separately using the AI model's image input capabilities.
+6. Do not assume that extracting PDF text is sufficient when the document contains screenshots or diagrams.
+7. Maintain document metadata and processing status.
+8. Allow users to preview uploaded files and extracted content.
+
+Store uploaded files securely.
+
+### Module D: AI Requirement Analysis
+
+Send extracted requirements and relevant screenshots to GPT-5.6 Luna.
+
+The AI should identify:
+
+- Functional requirements
+- User workflows
+- Input fields
+- Buttons and interactive elements
+- Validation rules
+- Preconditions
+- Expected application behaviour
+- Positive scenarios
+- Negative scenarios
+- Boundary cases
+- Relevant UI-specific test scenarios
+
+Maintain traceability between generated test cases and their source requirements.
+
+### Module E: Test Case Generation
+
+Generate structured test cases.
+
+Each test case should contain:
+
+- Test case ID
+- Title
+- Description
+- Requirement reference
+- Preconditions
+- Test steps
+- Test data
+- Expected results
+- Priority
+- Test category
+- Execution status
+
+Test categories should include:
+
+- Functional
+- Negative
+- Boundary
+- UI validation
+- Navigation
+- Form validation
+
+Example:
+
+{
+  "test_case_id": "TC_001",
+  "title": "Login with valid credentials",
+  "category": "Functional",
+  "priority": "High",
+  "preconditions": [
+    "User account exists"
+  ],
+  "steps": [
+    {
+      "step_number": 1,
+      "action": "Open login page",
+      "expected_result": "Login page is visible"
+    },
+    {
+      "step_number": 2,
+      "action": "Enter valid email",
+      "expected_result": "Email is entered successfully"
+    },
+    {
+      "step_number": 3,
+      "action": "Enter valid password",
+      "expected_result": "Password is entered successfully"
+    },
+    {
+      "step_number": 4,
+      "action": "Click login button",
+      "expected_result": "User reaches dashboard"
+    }
+  ]
+}
+
+Generate multiple meaningful test cases rather than one test case per requirement.
+
+Avoid duplicate scenarios.
+
+Allow users to:
+- View generated test cases.
+- Edit test cases.
+- Delete test cases.
+- Approve test cases.
+- Reject test cases.
+- Regenerate test cases.
+
+Only approved test cases should enter the execution queue.
+
+## 4. Computer-Based Execution Engine
+
+This is the most important component of the platform.
+
+Build an independent Python execution worker that can control an actual browser using computer interaction.
+
+Do not use Selenium, Playwright, Cypress or DOM-based automation.
+
+### Responsibilities
+
+The execution worker must:
+
+1. Launch Chromium in an isolated Linux virtual desktop.
+2. Open the configured application URL.
+3. Capture the current screen.
+4. Send the screenshot and current test context to the AI.
+5. Receive a structured action.
+6. Validate the action.
+7. Execute the action using mouse and keyboard.
+8. Capture the updated screen.
+9. Send the updated screenshot back to the AI.
+10. Continue until the current test step is completed.
+11. Validate the expected result.
+12. Store screenshots and action logs.
+
+### Supported computer actions
+
+Implement an action controller supporting:
+
+- CLICK
+- DOUBLE_CLICK
+- TYPE_TEXT
+- PRESS_KEY
+- SCROLL
+- WAIT
+- CAPTURE_SCREENSHOT
+- FINISH_STEP
+- REPORT_UNCERTAIN
+
+The AI should return structured action instructions.
+
+Example:
+
+{
+  "action": "CLICK",
+  "coordinates": {
+    "x": 450,
+    "y": 320
+  },
+  "reason": "Clicking the email input field",
+  "expected_observation": "Email field receives focus"
+}
+
+This is an example of our internal action schema. Adapt the AI response to this schema through a dedicated parser.
+
+### Execution safety
+
+- Validate all coordinates against screen dimensions.
+- Reject unsupported actions.
+- Apply action timeouts.
+- Maintain maximum action counts.
+- Maintain maximum retries.
+- Capture screenshots before and after important actions.
+- Never allow unrestricted shell execution from AI-generated output.
+- Require explicit approval before destructive or externally consequential actions.
+- Prevent interaction with unauthorized domains.
+- Keep browser sessions isolated.
+- Mask sensitive inputs in logs and screenshots where possible.
+
+### Important execution behaviour
+
+Do not generate an entire sequence of coordinates in advance.
+
+The agent must follow this loop:
+
+OBSERVE → ANALYZE → DECIDE → ACT → OBSERVE AGAIN.
+
+The next action should depend on the updated screenshot and execution context.
+
+Implement a state machine to manage the execution lifecycle.
+
+Possible states:
+
+- PENDING
+- INITIALIZING
+- RUNNING
+- WAITING_FOR_AI
+- VALIDATING
+- PASSED
+- FAILED
+- INCONCLUSIVE
+- STOPPED
+
+## 5. AI Integration Architecture
+
+Create a separate AI provider abstraction.
+
+Suggested structure:
+
+ai/
+  provider.py
+  luna_provider.py
+  prompt_manager.py
+  response_parser.py
+  requirement_analyzer.py
+  test_case_generator.py
+  action_planner.py
+  result_evaluator.py
+
+Responsibilities:
+
+### Requirement Analyzer
+Understands uploaded requirements and screenshots.
+
+### Test Case Generator
+Creates structured test scenarios.
+
+### Action Planner
+Receives:
+- Current screenshot
+- Current test case
+- Current step
+- Previous action history
+- Expected result
+
+Returns the next computer action.
+
+### Result Evaluator
+Receives:
+- Expected result
+- Actual screenshot
+- Action history
+- Relevant application observations
+
+Returns:
+
+- PASS
+- FAIL
+- INCONCLUSIVE
+
+Do not let the AI automatically mark a test as passed merely because it believes the screen looks correct.
+
+Use independent evidence where possible.
+
+Keep prompts versioned and configurable.
+
+## 6. Validation Engine
+
+Implement three types of validation.
+
+### Functional validation
+
+Check whether the expected application behaviour occurred.
+
+### Visual validation
+
+Use screenshot analysis to identify:
+- Missing UI elements
+- Unexpected popups
+- Visible error messages
+- Layout changes
+- Overlapping elements
+- Incorrect page transitions
+
+### Execution validation
+
+Detect:
+- Browser crashes
+- Timeouts
+- Failed computer actions
+- Missing screenshots
+- AI response parsing errors
+
+Clearly distinguish application defects from automation infrastructure errors.
+
+A test should not be marked FAILED solely because the AI could not understand the screen.
+
+## 7. Execution Monitoring UI
+
+Build an execution monitoring interface.
+
+Display:
+
+- Test run ID
+- Current test case
+- Current step
+- Execution status
+- Current screenshot
+- Previous screenshots
+- Action history
+- AI decision summary
+- Execution duration
+- Error details
+
+Allow users to stop a running test.
+
+Use WebSockets or another suitable real-time communication mechanism to update the dashboard.
+
+## 8. Reporting Module
+
+Generate reports containing:
+
+- Project details
+- Test run details
+- Total test cases
+- Passed tests
+- Failed tests
+- Inconclusive tests
+- Pass percentage
+- Failed test descriptions
+- Step-level results
+- Screenshots
+- Execution logs
+- AI evaluation summaries
+
+Allow reports to be downloaded as PDF.
+
+Every failed test should have supporting evidence whenever available.
+
+## 9. Database Design
+
+Create normalized database tables for:
+
+- users
+- projects
+- project_documents
+- requirements
+- test_cases
+- test_steps
+- test_runs
+- step_results
+- action_logs
+- evidence
+- reports
+
+Include:
+- Primary and foreign keys
+- Timestamps
+- Appropriate indexes
+- Relationships
+- Execution status fields
+- Project-level isolation
+
+Do not store large screenshot binaries directly in PostgreSQL. Store files separately and retain their references in the database.
+
+## 10. Backend API Design
+
+Implement REST endpoints for:
+
+Authentication:
+- POST /api/auth/register
+- POST /api/auth/login
+
+Projects:
+- POST /api/projects
+- GET /api/projects
+- GET /api/projects/{id}
+- PUT /api/projects/{id}
+- DELETE /api/projects/{id}
+
+Documents:
+- POST /api/projects/{id}/documents
+- GET /api/projects/{id}/documents
+- GET /api/documents/{id}/status
+
+Requirements:
+- GET /api/projects/{id}/requirements
+- POST /api/projects/{id}/analyze
+
+Test cases:
+- POST /api/projects/{id}/generate-tests
+- GET /api/projects/{id}/test-cases
+- PUT /api/test-cases/{id}
+- DELETE /api/test-cases/{id}
+- POST /api/test-cases/{id}/approve
+- POST /api/test-cases/{id}/reject
+
+Execution:
+- POST /api/test-runs
+- GET /api/test-runs/{id}
+- POST /api/test-runs/{id}/stop
+- GET /api/test-runs/{id}/results
+
+Reporting:
+- GET /api/test-runs/{id}/report
+- GET /api/reports/{id}/download
+
+Adjust the endpoints where necessary to maintain clean REST conventions.
+
+## 11. Development and Code Quality Requirements
+
+- Use clean architecture and separation of concerns.
+- Keep frontend and backend independently maintainable.
+- Use reusable components.
+- Implement proper exception handling.
+- Add structured logging.
+- Validate all API requests.
+- Add database migrations.
+- Add unit tests for core services.
+- Add integration tests for AI response parsing and execution orchestration.
+- Document environment variables.
+- Provide Dockerfiles and Docker Compose configuration.
+- Do not expose secrets in logs.
+- Do not create fake AI responses or hardcoded test results.
+- Do not claim a test passed without actual execution evidence.
+
+## 12. UI/UX Requirements
+
+Create a polished professional SaaS dashboard.
+
+Design direction:
+- Clean and modern.
+- Professional QA/testing platform appearance.
+- Responsive layout.
+- Consistent typography.
+- Clear status indicators.
+- Intuitive navigation.
+- Useful empty states.
+- Loading indicators.
+- Error messages.
+- Confirmation dialogs for destructive operations.
+
+Avoid unnecessary animations and excessive visual decoration.
+
+## 13. Implementation Strategy
+
+Do not attempt to implement the entire platform in one unverified step.
+
+First inspect the existing repository and understand its current architecture.
+
+If the repository already contains code, preserve working implementations and extend them instead of unnecessarily rewriting them.
+
+Implement the system in these milestones:
+
+Milestone 1:
+Project setup, database, authentication and project management.
+
+Milestone 2:
+Document uploads, extraction, OCR and screenshot processing.
+
+Milestone 3:
+Organization GPT provider integration and requirement analysis.
+
+Milestone 4:
+Test case generation, review, editing and approval.
+
+Milestone 5:
+Linux virtual desktop, Chromium startup and computer interaction controller.
+
+Milestone 6:
+Screenshot-driven AI execution loop.
+
+Milestone 7:
+Validation, evidence collection and reporting.
+
+Milestone 8:
+End-to-end integration, Docker setup, security checks and testing.
+
+After completing each milestone:
+1. Explain what was implemented.
+2. List created and modified files.
+3. Run relevant tests.
+4. Fix errors before proceeding.
+5. Document any incomplete functionality.
+6. Do not silently skip requirements.
+
+## 14. Important Restrictions
+
+- Do not use Selenium.
+- Do not use Playwright.
+- Do not use Cypress.
+- Do not use commercial AI testing platforms.
+- Do not hardcode the GPT provider credentials.
+- Do not assume that GPT has direct access to the user's computer.
+- All computer interactions must pass through our controlled execution worker.
+- Do not mark tests as passed based only on successful mouse clicks.
+- Do not implement Level 2 or Level 3 autonomous exploration yet.
+- Do not replace real functionality with mock implementations.
+
+## 15. First Task
+
+Before writing substantial code:
+
+1. Inspect the repository.
+2. Present the proposed implementation plan.
+3. Identify missing infrastructure and dependencies.
+4. Define the database schema.
+5. Define the AI provider integration contract.
+6. Define the computer action JSON schema.
+7. Identify security and execution risks.
+
+Then start implementing Milestone 1.
+
+The final goal is a working AI-powered testing platform in which a user can upload requirements, generate and approve test cases, and have an AI agent execute those test cases by visually interacting with a web application using computer-based control.
